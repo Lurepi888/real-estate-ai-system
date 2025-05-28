@@ -8,12 +8,8 @@ from datetime import datetime
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key')
 
-# Database configuration with proper URL handling for Render
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
-# Fix for Render PostgreSQL URL format
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://')
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# Use SQLite instead of PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database
@@ -38,25 +34,24 @@ def load_user(user_id):
 # Routes
 @app.route('/')
 def index():
-    try:
-        return render_template('index.html')
-    except Exception as e:
-        return f"Welcome to Real Estate AI System! (Template error: {str(e)})"
+    return render_template('index.html')
 
 @app.route('/dashboard')
 def dashboard():
+    return render_template('index.html', message="Welcome to your dashboard!")
+
+@app.route('/db-test')
+def db_test():
     try:
-        return render_template('index.html', message="Welcome to your dashboard!")
+        db.create_all()
+        return "Database tables created successfully!"
     except Exception as e:
-        return "Welcome to your dashboard! (Template error: {str(e)})"
+        return f"Database Error: {type(e).__name__} - {str(e)}"
 
 # Create database tables
 @app.before_first_request
 def create_tables():
-    try:
-        db.create_all()
-    except Exception as e:
-        print(f"Database initialization error: {str(e)}")
+    db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(host='0.0.0.0')
